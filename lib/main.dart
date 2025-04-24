@@ -20,6 +20,9 @@ import 'screens/photo_gallery_page.dart';
 import 'screens/settings_page.dart'; // 导入新的设置页面
 
 void main() async {
+  // 初始化SharedPreferences
+  await initPrefs();
+
   // 确保初始化Flutter绑定
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -43,9 +46,6 @@ void main() async {
     themeService.initialize(),
     mediaSyncService.initialize(), // 初始化媒体同步服务
   ]);
-
-  // 初始化SharedPreferences
-  await initPrefs();
 
   runApp(
     // 使用Provider提供服务
@@ -292,7 +292,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     : '设置'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
-          if (_selectedIndex != 3)
+          // 仅在相册页面显示同步按钮
+          if (_selectedIndex == 0)
             IconButton(
               icon: const Icon(Icons.cloud_sync),
               onPressed: () {

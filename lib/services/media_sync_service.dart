@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:p_limit/p_limit.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:synchronized/synchronized.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
@@ -140,7 +141,10 @@ class TransferTask {
 /// 负责扫描本地媒体、构建索引、与云端同步
 class MediaSyncService {
   /// 最大并发上传/下载任务数
-  final int _maxConcurrentTasks;
+  get _maxConcurrentTasks async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt('webdav_max_concurrent_tasks') ?? 5;
+  }
 
   /// WebDAV服务
   final WebDavService _webdavService;
@@ -211,8 +215,7 @@ class MediaSyncService {
   /// 传输任务状态更新回调
   Function(List<TransferTask>)? onTransferTasksUpdate;
 
-  MediaSyncService(this._webdavService, {int maxConcurrentTasks = 5})
-      : _maxConcurrentTasks = maxConcurrentTasks {
+  MediaSyncService(this._webdavService) {
     // 初始化移动媒体扫描器，提供进度更新回调
     _mobileScanner = MobileMediaScanner(onProgressUpdate: (progress) {
       _syncProgress = progress;

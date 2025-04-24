@@ -42,12 +42,8 @@ class WebDavService {
   }
 
   // 初始化WebDAV连接
-  Future<bool> initialize(
-    String serverUrl, {
-    String? username,
-    String? password,
-    String uploadRootPath = '/',
-  }) async {
+  Future<bool> initialize(String serverUrl,
+      {String? username, String? password, String uploadRootPath = '/'}) async {
     _serverUrl = serverUrl;
     _username = username;
     _password = password;

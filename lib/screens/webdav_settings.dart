@@ -161,7 +161,7 @@ class _WebDavSettingsScreenState extends State<WebDavSettingsScreen> {
 
       // 保存新增的设置项
       await prefs.setString(
-          'webdav_upload_root_path', _uploadRootPathController.text);
+          'webdav_upload_path', _uploadRootPathController.text);
       await prefs.setString(
           'webdav_max_concurrent_tasks', _maxConcurrentTasksController.text);
 
