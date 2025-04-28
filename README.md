@@ -22,6 +22,12 @@
 [download-badge]: https://img.shields.io/github/downloads/shadow3aaa/echo_pixel/total?style=for-the-badge
 [download-url]: https://github.com/shadow3aaa/echo_pixel/releases/latest
 
+## TODO
+
+- [ ] 重构，解耦同步逻辑
+- [ ] 自动备份
+- [ ] 优化相册浏览功能
+
 ## Credits
 
 - [Maple Font](https://github.com/subframe7536/Maple-font) [@subframe7536](https://github.com/subframe7536)

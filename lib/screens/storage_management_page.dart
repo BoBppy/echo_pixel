@@ -206,7 +206,7 @@ class _StorageManagementPageState extends State<StorageManagementPage> {
               padding: const EdgeInsets.all(16.0),
               children: [
                 // 存储使用概览
-                Card(
+                Card.filled(
                   margin: const EdgeInsets.only(bottom: 16.0),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
@@ -247,7 +247,7 @@ class _StorageManagementPageState extends State<StorageManagementPage> {
                 ),
 
                 // 缓存管理
-                Card(
+                Card.filled(
                   margin: const EdgeInsets.only(bottom: 16.0),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
@@ -292,7 +292,7 @@ class _StorageManagementPageState extends State<StorageManagementPage> {
                 ),
 
                 // 存储设置
-                Card(
+                Card.filled(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(

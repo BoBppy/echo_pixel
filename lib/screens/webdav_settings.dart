@@ -1,9 +1,9 @@
+import 'package:echo_pixel/screens/webdav_status_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/webdav_service.dart';
 import '../services/media_sync_service.dart';
-import 'webdav_status_page.dart';
 
 class WebDavSettingsScreen extends StatefulWidget {
   final MediaSyncService? mediaSyncService;
@@ -22,7 +22,7 @@ class _WebDavSettingsScreenState extends State<WebDavSettingsScreen> {
   final _serverController = TextEditingController();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _uploadRootPathController = TextEditingController(text: '/');
+  final _uploadRootPathController = TextEditingController(text: '/EchoPixel');
   final _maxConcurrentTasksController = TextEditingController(text: '5');
   late final WebDavService _webDavService;
 
@@ -47,7 +47,6 @@ class _WebDavSettingsScreenState extends State<WebDavSettingsScreen> {
       if (!mounted) return;
 
       _webDavService = context.read<WebDavService>();
-      // 从本地存储加载WebDAV配置
       _loadSavedSettings();
     });
   }
@@ -60,7 +59,8 @@ class _WebDavSettingsScreenState extends State<WebDavSettingsScreen> {
       final username = prefs.getString('webdav_username');
       final password = prefs.getString('webdav_password');
       final uploadRootPath = prefs.getString('webdav_upload_root_path');
-      final maxConcurrentTasks = prefs.getString('webdav_max_concurrent_tasks');
+      final maxConcurrentTasks =
+          prefs.getInt('webdav_max_concurrent_tasks').toString();
 
       if (serverUrl != null) {
         setState(() {
@@ -70,9 +70,7 @@ class _WebDavSettingsScreenState extends State<WebDavSettingsScreen> {
           if (uploadRootPath != null) {
             _uploadRootPathController.text = uploadRootPath;
           }
-          if (maxConcurrentTasks != null) {
-            _maxConcurrentTasksController.text = maxConcurrentTasks;
-          }
+          _maxConcurrentTasksController.text = maxConcurrentTasks;
         });
 
         // 自动测试连接
@@ -159,11 +157,10 @@ class _WebDavSettingsScreenState extends State<WebDavSettingsScreen> {
         await prefs.remove('webdav_password');
       }
 
-      // 保存新增的设置项
       await prefs.setString(
-          'webdav_upload_path', _uploadRootPathController.text);
-      await prefs.setString(
-          'webdav_max_concurrent_tasks', _maxConcurrentTasksController.text);
+          'webdav_upload_root_path', _uploadRootPathController.text);
+      await prefs.setInt('webdav_max_concurrent_tasks',
+          int.parse(_maxConcurrentTasksController.text));
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -338,7 +335,7 @@ class _WebDavSettingsScreenState extends State<WebDavSettingsScreen> {
               ),
               const SizedBox(height: 32),
               // 添加查看传输状态卡片
-              Card(
+              Card.filled(
                 elevation: 2,
                 child: InkWell(
                   onTap: _openWebDavStatusPage,

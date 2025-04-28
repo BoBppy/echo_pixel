@@ -129,7 +129,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
 
           // 主题设置
-          Card(
+          Card.filled(
             margin: const EdgeInsets.symmetric(vertical: 8.0),
             child: SwitchListTile(
               title: const Text('深色模式'),
@@ -152,7 +152,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
 
           // WebDAV设置卡片
-          Card(
+          Card.filled(
             margin: const EdgeInsets.symmetric(vertical: 8.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,7 +177,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
 
           // 自动同步设置
-          Card(
+          Card.filled(
             margin: const EdgeInsets.symmetric(vertical: 8.0),
             child: SwitchListTile(
               title: const Text('自动同步'),
@@ -200,7 +200,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
 
           // 存储空间管理
-          Card(
+          Card.filled(
             margin: const EdgeInsets.symmetric(vertical: 8.0),
             child: ListTile(
               leading: const Icon(Icons.storage),
@@ -212,7 +212,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
 
           // 媒体扫描设置
-          Card(
+          Card.filled(
             margin: const EdgeInsets.symmetric(vertical: 8.0),
             child: ListTile(
               leading: const Icon(Icons.folder),
@@ -235,7 +235,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
 
-          Card(
+          Card.filled(
             margin: const EdgeInsets.symmetric(vertical: 8.0),
             child: ListTile(
               leading: const Icon(Icons.info_outline),

@@ -1,14 +1,14 @@
 import 'dart:io';
 import 'dart:convert';
-import 'package:flutter/rendering.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart'; // 添加这个导入
 
-class WebDavService {
+class WebDavService extends ChangeNotifier {
   String? _serverUrl;
   String? _username;
   String? _password;
-  String _uploadRootPath = '/';
+  String _uploadRootPath = '/EchoPixel';
   bool _isConnected = false;
 
   // 持久化的HttpClient和IOClient
@@ -36,30 +36,45 @@ class WebDavService {
   String get uploadRootPath => _uploadRootPath;
 
   // 释放资源
+  @override
   void dispose() {
+    super.dispose();
     _client.close();
     _httpClient.close();
   }
 
   // 初始化WebDAV连接
   Future<bool> initialize(String serverUrl,
-      {String? username, String? password, String uploadRootPath = '/'}) async {
+      {String? username,
+      String? password,
+      String? uploadRootPath = '/EchoPixel'}) async {
     _serverUrl = serverUrl;
     _username = username;
     _password = password;
-    _uploadRootPath =
-        uploadRootPath.endsWith('/') ? uploadRootPath : '$uploadRootPath/';
+    if (uploadRootPath == null) {
+      _uploadRootPath = '/EchoPixel';
+    } else {
+      _uploadRootPath =
+          uploadRootPath.endsWith('/') ? uploadRootPath : '$uploadRootPath/';
+    }
+
+    debugPrint('WebDAV服务器URL: $_serverUrl');
+    debugPrint('WebDAV用户名: $_username');
+    debugPrint('WebDAV上传根目录: $_uploadRootPath');
+    debugPrint('WebDAV密码: ${_password != null ? '******' : '未提供'}');
 
     try {
       final response = await _makeRequest(
         method: 'PROPFIND',
-        path: _uploadRootPath,
+        path: '/',
         headers: {'Depth': '0'},
       );
       _isConnected = response.statusCode == 207 || response.statusCode == 200;
+      notifyListeners();
       return _isConnected;
     } catch (e) {
       _isConnected = false;
+      notifyListeners();
       return false;
     }
   }
@@ -219,7 +234,7 @@ class WebDavService {
   }
 
   // 检查文件是否存在
-  Future<bool> fileExists(String path) async {
+  Future<bool> pathExists(String path) async {
     if (!_isConnected) {
       throw Exception('WebDAV not connected');
     }

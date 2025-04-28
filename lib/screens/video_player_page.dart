@@ -1,12 +1,11 @@
-import 'dart:io';
+import 'package:echo_pixel/services/media_scanner.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-
-import '../models/media_index.dart';
+import 'package:path/path.dart';
 
 class VideoPlayerPage extends StatefulWidget {
-  final MediaFileInfo mediaFile;
+  final MediaAsset mediaFile;
 
   const VideoPlayerPage({
     required this.mediaFile,
@@ -23,8 +22,6 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
   // 创建视频控制器
   late final VideoController _controller;
   bool _isInitialized = false;
-  bool _hasError = false;
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -40,26 +37,20 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
       _controller = VideoController(_player);
 
       // 打开视频文件
-      final videoFile = File(widget.mediaFile.originalPath);
+      final videoFile = widget.mediaFile.file;
       if (!videoFile.existsSync()) {
         throw Exception('视频文件不存在');
       }
 
-      await _player.open(Media(widget.mediaFile.originalPath));
+      await _player.open(Media(widget.mediaFile.file.path));
 
       if (mounted) {
         setState(() {
           _isInitialized = true;
         });
       }
-    } catch (e) {
-      debugPrint('初始化视频播放器失败: ${e.toString()}');
-      if (mounted) {
-        setState(() {
-          _hasError = true;
-          _errorMessage = '无法播放视频: ${e.toString()}';
-        });
-      }
+    } catch (e, stackTrace) {
+      debugPrint('初始化视频播放器失败: $e, $stackTrace');
     }
   }
 
@@ -68,51 +59,11 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: Text(widget.mediaFile.fileName),
+        title: Text(basename(widget.mediaFile.file.path)),
         backgroundColor: Colors.black.withValues(alpha: 0.5),
         elevation: 0,
       ),
-      body: _hasError
-          ? _buildErrorView()
-          : !_isInitialized
-              ? _buildLoadingView()
-              : _buildVideoPlayer(),
-    );
-  }
-
-  // 构建错误视图
-  Widget _buildErrorView() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.white.withValues(alpha: 0.5),
-          ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
-              _errorMessage ?? '播放视频时发生错误',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 16,
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            icon: const Icon(Icons.arrow_back),
-            label: const Text('返回'),
-          ),
-        ],
-      ),
+      body: !_isInitialized ? _buildLoadingView() : _buildVideoPlayer(),
     );
   }
 
@@ -159,7 +110,7 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  mediaInfo.fileName,
+                  basename(mediaInfo.file.path),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
@@ -168,12 +119,12 @@ class _VideoPlayerPageState extends State<VideoPlayerPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '文件大小: ${_formatSize(mediaInfo.size)}',
+                  '文件大小: ${_formatSize(mediaInfo.file.lengthSync())}',
                   style: const TextStyle(color: Colors.white70),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '修改时间: ${_formatDate(mediaInfo.modifiedAt)}',
+                  '修改时间: ${_formatDate(mediaInfo.file.statSync().modified)}',
                   style: const TextStyle(color: Colors.white70),
                 ),
               ],

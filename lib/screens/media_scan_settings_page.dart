@@ -176,7 +176,7 @@ class _MediaScanSettingsPageState extends State<MediaScanSettingsPage> {
               children: [
                 // 扫描文件夹列表 - 只在桌面平台显示
                 if (MediaScanSettingsPage.isDesktopPlatform())
-                  Card(
+                  Card.filled(
                     margin: const EdgeInsets.only(bottom: 16.0),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -238,7 +238,7 @@ class _MediaScanSettingsPageState extends State<MediaScanSettingsPage> {
 
                 // 移动端设备说明
                 if (!MediaScanSettingsPage.isDesktopPlatform())
-                  Card(
+                  Card.filled(
                     margin: const EdgeInsets.only(bottom: 16.0),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),

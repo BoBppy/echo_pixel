@@ -1,7 +1,6 @@
 import 'dart:io';
+import 'package:echo_pixel/services/media_scanner.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import '../models/media_index.dart';
 import '../widgets/gif_player.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
@@ -9,8 +8,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path/path.dart' as path;
 
 class ImageViewerPage extends StatefulWidget {
-  final MediaFileInfo mediaFile;
-  final List<MediaFileInfo>? mediaFiles; // 同一组中的所有媒体文件，用于左右滑动浏览
+  final MediaAsset mediaFile;
+  final List<MediaAsset>? mediaFiles; // 同一组中的所有媒体文件，用于左右滑动浏览
   final int initialIndex; // 初始显示的索引
 
   const ImageViewerPage({
@@ -27,7 +26,6 @@ class ImageViewerPage extends StatefulWidget {
 class _ImageViewerPageState extends State<ImageViewerPage> {
   late PageController _pageController;
   late int _currentIndex;
-  bool _isFullScreen = false;
   bool _isControlsVisible = true;
 
   @override
@@ -49,10 +47,6 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
   @override
   void dispose() {
     _pageController.dispose();
-    // 如果进入了全屏模式，确保退出时恢复状态栏
-    if (_isFullScreen) {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    }
     super.dispose();
   }
 
@@ -62,31 +56,21 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
     });
   }
 
-  void _toggleFullScreen() {
-    setState(() {
-      _isFullScreen = !_isFullScreen;
-      if (_isFullScreen) {
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-      } else {
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      }
-    });
-  }
-
   void _shareImage() {
-    final MediaFileInfo currentFile = widget.mediaFiles != null
+    final MediaAsset currentFile = widget.mediaFiles != null
         ? widget.mediaFiles![_currentIndex]
         : widget.mediaFile;
 
-    Share.shareXFiles(
-      [XFile(currentFile.originalPath)],
-      text: 'Sharing ${path.basename(currentFile.originalPath)}',
-    );
+    SharePlus.instance.share(ShareParams(
+      files: [XFile(currentFile.file.path)],
+      previewThumbnail: XFile(currentFile.file.path),
+      text: 'Sharing ${path.basename(currentFile.file.path)}',
+    ));
   }
 
   // 检查当前查看的文件是否为GIF
-  bool _isGifFile(MediaFileInfo file) {
-    return file.originalPath.toLowerCase().endsWith('.gif');
+  bool _isGifFile(MediaAsset file) {
+    return file.file.path.toLowerCase().endsWith('.gif');
   }
 
   @override
@@ -94,7 +78,7 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
     // 如果提供了媒体文件列表，使用Gallery模式
     final bool isGalleryMode =
         widget.mediaFiles != null && widget.mediaFiles!.isNotEmpty;
-    final List<MediaFileInfo> files =
+    final List<MediaAsset> files =
         isGalleryMode ? widget.mediaFiles! : [widget.mediaFile];
 
     // 检查当前文件是否为GIF
@@ -102,12 +86,12 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: _isControlsVisible && !_isFullScreen
+      appBar: _isControlsVisible
           ? AppBar(
-              backgroundColor: Colors.black.withOpacity(0.5),
+              backgroundColor: Colors.black.withValues(alpha: 0.5),
               foregroundColor: Colors.white,
               title: Text(
-                path.basename(files[_currentIndex].originalPath),
+                path.basename(files[_currentIndex].file.path),
                 style: const TextStyle(fontSize: 16),
               ),
               actions: [
@@ -118,7 +102,7 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.7),
+                      color: Colors.purple.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: const Text(
@@ -129,12 +113,6 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                       ),
                     ),
                   ),
-                IconButton(
-                  icon: Icon(
-                      _isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen),
-                  onPressed: _toggleFullScreen,
-                  tooltip: '全屏',
-                ),
                 IconButton(
                   icon: const Icon(Icons.share),
                   onPressed: _shareImage,
@@ -150,15 +128,15 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
             ? PhotoViewGallery.builder(
                 scrollPhysics: const BouncingScrollPhysics(),
                 builder: (context, index) {
-                  final MediaFileInfo file = files[index];
-                  final bool isGif = _isGifFile(file);
+                  final MediaAsset asset = files[index];
+                  final bool isGif = _isGifFile(asset);
 
                   // 根据文件类型选择不同的显示组件
                   if (isGif) {
                     return PhotoViewGalleryPageOptions.customChild(
                       child: Center(
                         child: GifPlayer(
-                          filePath: file.originalPath,
+                          filePath: asset.file.path,
                           fit: BoxFit.contain,
                           autoPlay: true,
                           filterQuality: FilterQuality.high,
@@ -166,18 +144,14 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                       ),
                       minScale: PhotoViewComputedScale.contained * 0.8,
                       maxScale: PhotoViewComputedScale.covered * 2.0,
-                      heroAttributes:
-                          PhotoViewHeroAttributes(tag: 'media_${file.id}'),
                     );
                   } else {
                     // 普通图片使用标准PhotoView
                     return PhotoViewGalleryPageOptions(
-                      imageProvider: FileImage(File(file.originalPath)),
+                      imageProvider: FileImage(File(asset.file.path)),
                       initialScale: PhotoViewComputedScale.contained,
                       minScale: PhotoViewComputedScale.contained * 0.8,
                       maxScale: PhotoViewComputedScale.covered * 2.0,
-                      heroAttributes:
-                          PhotoViewHeroAttributes(tag: 'media_${file.id}'),
                     );
                   }
                 },
@@ -204,9 +178,9 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
               )
             : _buildSingleImageView(files[0]), // 单图模式
       ),
-      bottomNavigationBar: _isControlsVisible && isGalleryMode && !_isFullScreen
+      bottomNavigationBar: _isControlsVisible && isGalleryMode
           ? BottomAppBar(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withValues(alpha: 0.5),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -222,14 +196,14 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
   }
 
   // 构建单图查看模式
-  Widget _buildSingleImageView(MediaFileInfo file) {
-    final bool isGif = _isGifFile(file);
+  Widget _buildSingleImageView(MediaAsset asset) {
+    final bool isGif = _isGifFile(asset);
 
     if (isGif) {
       // GIF文件使用GifPlayer
       return Center(
         child: GifPlayer(
-          filePath: file.originalPath,
+          filePath: asset.file.path,
           fit: BoxFit.contain,
           autoPlay: true,
           filterQuality: FilterQuality.high,
@@ -238,12 +212,11 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
     } else {
       // 普通图片使用PhotoView
       return PhotoView(
-        imageProvider: FileImage(File(file.originalPath)),
+        imageProvider: FileImage(asset.file),
         initialScale: PhotoViewComputedScale.contained,
         minScale: PhotoViewComputedScale.contained * 0.8,
         maxScale: PhotoViewComputedScale.covered * 2.0,
         backgroundDecoration: const BoxDecoration(color: Colors.black),
-        heroAttributes: PhotoViewHeroAttributes(tag: 'media_${file.id}'),
       );
     }
   }

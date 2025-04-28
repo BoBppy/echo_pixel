@@ -1,505 +1,162 @@
+import 'dart:convert';
 import 'dart:io';
-import 'package:echo_pixel/services/media_sync_service.dart';
+
+import 'package:echo_pixel/services/media_scanner.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
-import 'package:p_limit/p_limit.dart';
+import 'package:mime/mime.dart';
 import 'package:photo_manager/photo_manager.dart';
-import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart' as path_provider;
-import 'package:crypto/crypto.dart';
-import 'package:synchronized/synchronized.dart';
 
-import '../models/media_index.dart';
-
-/// 移动端媒体扫描服务
-/// 专门用于扫描Android和iOS设备上的图片和视频
-class MobileMediaScanner {
-  /// 扫描进度（0-100）
-  int _scanProgress = 0;
-
-  /// 扫描错误信息
-  String? _scanError;
-
-  /// 是否正在扫描
+class MobileMediaScanner extends MediaScanner {
   bool _isScanning = false;
+  late Directory _cacheDir;
+  double _scanProgress = 0.0;
+  Map<String, List<String>> _indices = {};
+  Map<String, MediaAsset> _mediaFiles = {};
 
-  /// 媒体索引结果（按日期分组）
-  final Map<String, MediaIndex> _mediaIndices = {};
+  /// 禁止外部构造
+  MobileMediaScanner._();
 
-  /// 进度回调
-  final Function(int progress)? _onProgressUpdate;
+  static Future<MobileMediaScanner> build() async {
+    final scanner = MobileMediaScanner._();
+    await scanner.initialize();
+    return scanner;
+  }
 
-  /// 扫描完成回调
-  final Function(Map<String, MediaIndex> indices)? _onScanComplete;
+  Future<void> initialize() async {
+    _cacheDir = await indexCacheDirectory;
+    if (!await _cacheDir.exists()) {
+      await _cacheDir.create(recursive: true);
+    }
+    await _loadFromCache();
+  }
 
-  /// 错误回调
-  final Function(String error)? _onScanError;
+  @override
+  double get scanProgress => _scanProgress;
 
-  /// 最大文件大小（处理哈希时采用块处理的阈值, 50MB）
-  static const int _maxFileSize = 50 * 1024 * 1024;
+  @override
+  Map<String, List<String>> get indices => _indices;
 
-  /// 要跳过的文件大小（超过此大小的文件将跳过处理, 1GB）
-  static const int _skipFileSize = 1024 * 1024 * 1024;
+  @override
+  Map<String, MediaAsset> get mediaFiles => _mediaFiles;
 
-  /// 构造函数
-  MobileMediaScanner({
-    Function(int progress)? onProgressUpdate,
-    Function(Map<String, MediaIndex> indices)? onScanComplete,
-    Function(String error)? onScanError,
-  })  : _onProgressUpdate = onProgressUpdate,
-        _onScanComplete = onScanComplete,
-        _onScanError = onScanError;
+  String get indiceCachePath {
+    return '${_cacheDir.path}${Platform.pathSeparator}indices.json';
+  }
 
-  /// 获取扫描进度
-  int get scanProgress => _scanProgress;
+  String get mediaFilesCachePath {
+    return '${_cacheDir.path}${Platform.pathSeparator}media_files.json';
+  }
 
-  /// 获取扫描错误
-  String? get scanError => _scanError;
-
-  /// 是否正在扫描
-  bool get isScanning => _isScanning;
-
-  /// 扫描移动设备上的图片和视频
-  /// 使用 photo_manager 包访问媒体库
-  Future<Map<String, MediaIndex>> scanMobileMedia() async {
-    if (!Platform.isAndroid && !Platform.isIOS) {
-      throw UnsupportedError('此方法仅支持移动平台');
+  /// 从缓存加载
+  Future<void> _loadFromCache() async {
+    final indicesCache = File(indiceCachePath);
+    if (await indicesCache.exists()) {
+      final cache = await indicesCache.readAsString();
+      final raw = json.decode(cache) as Map<String, dynamic>;
+      _indices = raw.map<String, List<String>>(
+        (key, value) => MapEntry(
+          key,
+          // 把 List<dynamic> 转成 List<String>
+          List<String>.from((value as List<dynamic>)),
+        ),
+      );
     }
 
+    final mediaFilesCache = File(mediaFilesCachePath);
+    if (await mediaFilesCache.exists()) {
+      final cache = await mediaFilesCache.readAsString();
+      _mediaFiles = Map<String, Map<String, dynamic>>.from(json.decode(cache))
+          .map((hash, asset) => MapEntry(hash, MediaAsset.fromJson(asset)));
+    }
+  }
+
+  /// 保存到缓存
+  Future<void> _saveToCache() async {
+    final indicesCache = File(indiceCachePath);
+    await indicesCache.writeAsString(json.encode(_indices));
+
+    final mediaFilesCache = File(mediaFilesCachePath);
+    await mediaFilesCache.writeAsString(
+        json.encode(_mediaFiles.map((k, v) => MapEntry(k, v.toJson()))));
+  }
+
+  @override
+  Future<void> scan() async {
     if (_isScanning) {
-      throw StateError('已经在扫描中，请等待当前扫描完成');
+      throw StateError('已在扫描中');
     }
+
+    // 扫描只能同时运行一个
+    _isScanning = true;
 
     try {
-      _isScanning = true;
-      _scanProgress = 0;
-      _scanError = null;
-      _mediaIndices.clear();
+      // 重设扫描进度
+      _scanProgress = 0.0;
 
-      _updateProgress(0);
+      // 因为有权限引导页，这里不需要检查权限
+      // 检查权限
+      // final permissionStatus = await PhotoManager.requestPermissionExtend();
+      // if (!permissionStatus.isAuth) {
+      //   throw Exception('相册权限未授权');
+      // }
 
-      // 委托给后台隔离进程执行扫描任务
-      final result = await _scanMediaInBackground();
+      // 获取所有媒体资源路径
+      // 仅获取'全部'相册
+      final List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
+        type: RequestType.common,
+        onlyAll: true,
+        hasAll: true,
+      );
 
-      _mediaIndices.addAll(result);
-      _updateProgress(100);
+      final album = albums.first; // '全部'相册
+      final assetsCount = await album.assetCountAsync;
+      final Map<String, List<String>> indices = {};
+      final Map<String, MediaAsset> mediaFiles = {};
 
-      if (_onScanComplete != null) {
-        _onScanComplete(_mediaIndices);
+      const int batchSize = 16;
+      final int pageCount = (assetsCount / batchSize).ceil();
+
+      var scannedAssets = 0;
+
+      for (int page = 0; page < pageCount; page += 1) {
+        final assets =
+            await album.getAssetListPaged(page: page, size: batchSize);
+        for (final entity in assets) {
+          final date = entity.createDateTime;
+          final dateString = '${date.year}-${date.month}-${date.day}';
+          final file = await entity.file;
+          if (file == null) {
+            continue; // 跳过没有文件的资源(为什么会有?)
+          }
+          final hash = await assetHash(file);
+
+          // 如果还没有日期分类，添加
+          if (!indices.containsKey(dateString)) {
+            indices[dateString] = [];
+          }
+
+          final mine = lookupMimeType(file.path);
+          if (mine == null) {
+            continue;
+          }
+          final type = mine.startsWith('image')
+              ? MediaAssetType.image
+              : MediaAssetType.video;
+          indices[dateString]!.add(hash);
+          mediaFiles[hash] = MediaAsset(file, type);
+          scannedAssets += 1;
+          _scanProgress = scannedAssets / assetsCount;
+        }
       }
 
-      return _mediaIndices;
-    } catch (e) {
-      _scanError = '扫描出错: $e';
-      if (_onScanError != null) {
-        _onScanError(_scanError ?? '未知错误');
-      }
-      rethrow;
+      _indices = indices;
+      _mediaFiles = mediaFiles;
+
+      await _saveToCache();
+    } catch (e, stackTrace) {
+      debugPrint('移动端扫描失败: $e, $stackTrace');
     } finally {
       _isScanning = false;
     }
-  }
-
-  /// 在后台执行实际的扫描任务
-  Future<Map<String, MediaIndex>> _scanMediaInBackground() async {
-    // 检查权限
-    final permResult = await PhotoManager.requestPermissionExtend();
-    if (!permResult.isAuth) {
-      _scanError = '没有获得媒体访问权限';
-      if (_onScanError != null) {
-        _onScanError(_scanError ?? '未知错误');
-      }
-      throw Exception('没有获得媒体访问权限，请在设置中开启相应权限');
-    }
-
-    // 获取所有媒体资源路径
-    final List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
-      type: RequestType.common,
-      hasAll: true,
-    );
-
-    if (albums.isEmpty) {
-      return {};
-    }
-
-    // 获取"全部"相册中的资源
-    final allAlbum = albums.first;
-    final int totalCount = await allAlbum.assetCountAsync;
-
-    if (totalCount == 0) {
-      return {};
-    }
-
-    // 使用计算隔离进程处理批量媒体资源
-    // 分批次加载，避免一次加载过多导致内存压力
-    final Map<String, MediaIndex> result = {};
-    const int batchSize = 100;
-    int processedCount = 0;
-
-    // 扫描云端目录
-    final cloudDir = await getAppMediaDirectory();
-    await _scanDirectoryForMediaFiles(cloudDir);
-
-    // 扫描本地相册
-    for (int start = 0; start < totalCount; start += batchSize) {
-      final int end =
-          (start + batchSize > totalCount) ? totalCount : start + batchSize;
-
-      // 加载这一批次的资源
-      final batch = await allAlbum.getAssetListRange(start: start, end: end);
-
-      if (batch.isEmpty) continue;
-
-      // 使用compute在隔离进程中处理资源
-      final token = RootIsolateToken.instance!;
-      final batchResults = await compute(_processBatch, (batch, token));
-
-      // 合并结果
-      for (final entry in batchResults.entries) {
-        if (result.containsKey(entry.key)) {
-          result[entry.key]!.mediaFiles.addAll(entry.value.mediaFiles);
-        } else {
-          result[entry.key] = entry.value;
-        }
-      }
-
-      processedCount += batch.length;
-      final progress = ((processedCount / totalCount) * 100).round();
-      _updateProgress(progress);
-    }
-
-    return result;
-  }
-
-  /// 扫描目录中的媒体文件
-  Future<void> _scanDirectoryForMediaFiles(Directory directory) async {
-    try {
-      final files = <File>[];
-
-      await for (final entity in directory.list(recursive: true)) {
-        if (entity is File) {
-          final extension = path.extension(entity.path).toLowerCase();
-          final ext = extension.replaceAll('.', '');
-
-          if (MediaFileInfo.isImageExtension(ext) ||
-              MediaFileInfo.isVideoExtension(ext)) {
-            files.add(entity);
-          }
-        }
-      }
-
-      // 使用compute处理文件
-      if (files.isNotEmpty) {
-        final token = RootIsolateToken.instance!;
-        final results = await compute(_processFiles, (token, files));
-
-        // 合并结果
-        for (final entry in results.entries) {
-          if (_mediaIndices.containsKey(entry.key)) {
-            _mediaIndices[entry.key]!.mediaFiles.addAll(entry.value.mediaFiles);
-          } else {
-            _mediaIndices[entry.key] = entry.value;
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint('扫描目录出错: ${directory.path}, $e');
-    }
-  }
-
-  /// 更新进度并通知监听器
-  void _updateProgress(int progress) {
-    _scanProgress = progress;
-    if (_onProgressUpdate != null) {
-      _onProgressUpdate(progress);
-    }
-  }
-
-  /// 获取按日期组织的媒体索引
-  Map<String, MediaIndex> getMediaIndices() {
-    return Map.unmodifiable(_mediaIndices);
-  }
-}
-
-/// 在隔离进程中处理一批媒体资源
-Future<Map<String, MediaIndex>> _processBatch(
-    (List<AssetEntity>, RootIsolateToken) args) async {
-  final (batch, token) = args;
-  BackgroundIsolateBinaryMessenger.ensureInitialized(token);
-  final Map<String, MediaIndex> batchResult = {};
-  final lock = Lock();
-
-  final limit = PLimit(16);
-  final tasks = batch.map((asset) => limit(() async {
-        try {
-          final mediaInfo = await _processAssetToMediaInfo(asset);
-          if (mediaInfo != null) {
-            final datePath = MediaIndex.getDatePath(asset.createDateTime);
-
-            await lock.synchronized(() {
-              if (!batchResult.containsKey(datePath)) {
-                batchResult[datePath] = MediaIndex(
-                  datePath: datePath,
-                  mediaFiles: [],
-                );
-              }
-
-              // 不可能通过PhotoManager获取到云端目录的文件
-              batchResult[datePath]!
-                  .mediaFiles
-                  .add(MediaFile(info: mediaInfo, isLocal: true));
-            });
-          }
-        } catch (e) {
-          debugPrint('处理资源出错: ${asset.id}, $e');
-        }
-      }));
-  await Future.wait(tasks);
-
-  return batchResult;
-}
-
-/// 在隔离进程中处理一批文件
-Future<Map<String, MediaIndex>> _processFiles(
-    (RootIsolateToken, List<File>) args) async {
-  final (token, files) = args;
-  // 确保在隔离进程中初始化BackgroundIsolateBinaryMessenger
-  // 这是修复"BackgroundIsolateBinaryMessenger.instance值无效"错误的关键
-  try {
-    BackgroundIsolateBinaryMessenger.ensureInitialized(token);
-  } catch (e) {
-    debugPrint('初始化BackgroundIsolateBinaryMessenger失败: $e');
-    // 继续执行，因为有些平台或者Flutter版本可能不需要这个步骤
-  }
-
-  final Map<String, MediaIndex> result = {};
-  int skippedCount = 0;
-
-  for (final file in files) {
-    try {
-      final filePath = file.path;
-      final fileSize = await file.length();
-
-      // 跳过特别大的文件，避免内存溢出
-      if (fileSize > MobileMediaScanner._skipFileSize) {
-        debugPrint('跳过大文件: ${file.path} (${_formatSize(fileSize)})');
-        skippedCount++;
-        continue;
-      }
-
-      final stat = await file.stat();
-
-      final String nameWithoutExt = path.basename(filePath).split('.').first;
-      final String extension =
-          path.extension(filePath).replaceAll('.', '').toLowerCase();
-
-      // 获取文件类型
-      final MediaType mediaType = MediaFileInfo.inferTypeFromPath(filePath);
-
-      if (mediaType != MediaType.unknown) {
-        // 确定文件的实际创建日期
-        DateTime? createdAt;
-
-        // 检查文件路径是否包含从云端同步的标志
-        final appDir = await path_provider.getApplicationSupportDirectory();
-        final bool isCloudSyncedFile =
-            filePath.contains('${appDir.path}${Platform.pathSeparator}media');
-
-        if (isCloudSyncedFile) {
-          // 如果是从云端同步到本地的文件，尝试从路径中提取日期
-          // 路径格式通常是: \media\YYYY\MM\DD\filename.ext
-          try {
-            // 路径片段
-            final pathSegments = filePath.split(Platform.pathSeparator);
-
-            // 查找media目录之后的三个连续段
-            int mediaIndex = pathSegments.indexOf('media');
-            if (mediaIndex != -1 && mediaIndex + 3 < pathSegments.length) {
-              final yearStr = pathSegments[mediaIndex + 1];
-              final monthStr = pathSegments[mediaIndex + 2];
-              final dayStr = pathSegments[mediaIndex + 3];
-
-              // 检查是否是年/月/日格式
-              final yearRegex = RegExp(r'^\d{4}$');
-              final monthDayRegex = RegExp(r'^\d{2}$');
-
-              if (yearRegex.hasMatch(yearStr) &&
-                  monthDayRegex.hasMatch(monthStr) &&
-                  monthDayRegex.hasMatch(dayStr)) {
-                final year = int.tryParse(yearStr);
-                final month = int.tryParse(monthStr);
-                final day = int.tryParse(dayStr);
-
-                if (year != null && month != null && day != null) {
-                  // 创建日期对象
-                  createdAt = DateTime(year, month, day);
-                  debugPrint(
-                      '从路径提取日期: $yearStr/$monthStr/$dayStr -> $createdAt');
-                }
-              }
-            }
-          } catch (e) {
-            debugPrint('从路径提取日期错误: $e, 将使用文件修改时间');
-          }
-        }
-
-        // 如果没有从路径中提取到日期，则使用文件的修改时间
-        createdAt ??= stat.modified;
-        final DateTime modifiedAt = stat.modified;
-
-        // 生成安全的ID，对于大文件使用流式处理
-        final String mediaId = await _generateFileHash(file, fileSize);
-
-        // 获取日期路径
-        final String datePath = MediaIndex.getDatePath(createdAt);
-
-        // 创建媒体信息对象
-        final MediaFileInfo mediaInfo = MediaFileInfo(
-          id: mediaId,
-          originalPath: filePath,
-          name: nameWithoutExt,
-          extension: extension,
-          size: fileSize,
-          type: mediaType,
-          createdAt: createdAt,
-          modifiedAt: modifiedAt,
-        );
-
-        // 添加到对应日期的索引中
-        if (!result.containsKey(datePath)) {
-          result[datePath] = MediaIndex(
-            datePath: datePath,
-            mediaFiles: [],
-          );
-        }
-
-        result[datePath]!.mediaFiles.add(MediaFile(
-              info: mediaInfo,
-              isLocal: !isCloudSyncedFile,
-            ));
-      }
-    } catch (e) {
-      debugPrint('处理文件出错: ${file.path}, $e');
-    }
-  }
-
-  if (skippedCount > 0) {
-    debugPrint('已跳过 $skippedCount 个过大的文件');
-  }
-
-  return result;
-}
-
-/// 为文件生成哈希值，对于大文件使用流式处理
-Future<String> _generateFileHash(File file, int fileSize) async {
-  // 对于小文件，使用简单的路径和大小组合作为ID
-  if (fileSize < MobileMediaScanner._maxFileSize) {
-    return '${file.path}:$fileSize:${DateTime.now().millisecondsSinceEpoch}';
-  }
-  // 对于中等大小文件，计算部分内容的哈希值
-  else if (fileSize < MobileMediaScanner._skipFileSize) {
-    try {
-      // 只读取文件开头的部分进行哈希计算，避免内存溢出
-      final input = file.openRead(0, 1024 * 1024); // 读取前1MB
-      final bytes = await input.fold<List<int>>(
-        <int>[],
-        (List<int> previous, List<int> element) {
-          previous.addAll(element);
-          return previous;
-        },
-      );
-
-      // 计算哈希
-      final hash = sha256.convert(bytes);
-      return '${hash.toString()}:${file.path}:$fileSize';
-    } catch (e) {
-      debugPrint('生成文件哈希出错: ${file.path}, $e');
-      // 失败时回退到简单的组合ID
-      return '${file.path}:$fileSize:${DateTime.now().millisecondsSinceEpoch}';
-    }
-  }
-  // 对于特别大的文件，不应该到这里，但以防万一
-  else {
-    return '${file.path}:$fileSize:${DateTime.now().millisecondsSinceEpoch}';
-  }
-}
-
-/// 格式化文件大小
-String _formatSize(int bytes) {
-  const suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  var i = 0;
-  double size = bytes.toDouble();
-  while (size > 1024 && i < suffixes.length - 1) {
-    size /= 1024;
-    i++;
-  }
-  return '${size.toStringAsFixed(2)} ${suffixes[i]}';
-}
-
-/// 将AssetEntity转换为MediaFileInfo
-Future<MediaFileInfo?> _processAssetToMediaInfo(AssetEntity asset) async {
-  try {
-    // 获取媒体文件
-    final File? mediaFile = await asset.file;
-    if (mediaFile == null) {
-      return null;
-    }
-
-    final String originalPath = mediaFile.path;
-    final String nameWithoutExt = path.basenameWithoutExtension(originalPath);
-    final String extension =
-        path.extension(originalPath).replaceAll('.', '').toLowerCase();
-
-    // 确定媒体类型
-    MediaType mediaType;
-    if (asset.type == AssetType.image) {
-      mediaType = MediaType.image;
-    } else if (asset.type == AssetType.video) {
-      mediaType = MediaType.video;
-    } else {
-      return null; // 跳过未知类型
-    }
-
-    // 获取文件大小
-    int fileSize;
-    try {
-      fileSize = await mediaFile.length();
-
-      // 跳过特别大的文件，避免内存溢出
-      if (fileSize > MobileMediaScanner._skipFileSize) {
-        debugPrint('跳过大文件: $originalPath (${_formatSize(fileSize)})');
-        return null;
-      }
-    } catch (e) {
-      // 如果获取文件大小失败，使用一个默认值
-      debugPrint('获取文件大小出错: $originalPath, $e');
-      fileSize = 0;
-    }
-
-    // 创建分辨率信息
-    final MediaResolution resolution = MediaResolution(
-      width: asset.width,
-      height: asset.height,
-    );
-
-    // 使用安全的方式生成ID
-    final String mediaId = asset.id;
-
-    // 创建媒体文件信息对象
-    return MediaFileInfo(
-      id: mediaId,
-      originalPath: originalPath,
-      name: nameWithoutExt,
-      extension: extension,
-      size: fileSize,
-      type: mediaType,
-      createdAt: asset.createDateTime,
-      modifiedAt: asset.modifiedDateTime,
-      resolution: resolution,
-      duration: asset.type == AssetType.video ? asset.videoDuration : null,
-    );
-  } catch (e) {
-    debugPrint('处理资源出错: ${asset.id}, $e');
-    return null;
   }
 }

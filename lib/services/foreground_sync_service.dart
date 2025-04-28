@@ -12,7 +12,6 @@ void startCallback() {
 
 /// 前台同步服务，用于在后台同步时保持应用活跃
 class ForegroundSyncService {
-  static const String _taskName = 'Echo Pixel 同步';
   static const String _taskDesc = '正在与云端同步媒体文件...';
   static const String _channelId = 'sync_channel';
   static const String _channelName = '同步通知';
@@ -48,9 +47,7 @@ class ForegroundSyncService {
 
   // 启动前台任务
   static Future<void> startForegroundTask({
-    required String title,
     required String desc,
-    required Function(int progress) onProgressUpdate,
   }) async {
     if (Platform.isAndroid || Platform.isIOS) {
       // 请求电池优化豁免
@@ -62,12 +59,9 @@ class ForegroundSyncService {
       // 启用屏幕常亮
       await WakelockPlus.enable();
 
-      // 注册回调
-      await _registerCallbackTask(onProgressUpdate);
-
       // 启动前台任务
       await FlutterForegroundTask.startService(
-        notificationTitle: title,
+        notificationTitle: 'Echo Pixel 同步状态:',
         notificationText: desc,
         callback: startCallback,
       );
@@ -90,34 +84,22 @@ class ForegroundSyncService {
 
   // 更新前台任务通知
   static Future<void> updateNotification({
-    String? title,
     String? desc,
-    int progress = 0,
   }) async {
     if (Platform.isAndroid || Platform.isIOS) {
       if (!_isRunning) return;
 
       await FlutterForegroundTask.updateService(
-        notificationTitle: title ?? _taskName,
+        notificationTitle: 'Echo Pixel 同步状态:',
         notificationText: desc ?? _taskDesc,
         callback: startCallback,
       );
     }
   }
-
-  // 注册任务回调
-  static Future<void> _registerCallbackTask(
-      Function(int progress) onProgressUpdate) async {
-    // 保存进度更新回调到静态变量
-    SyncTaskHandler.onProgressUpdate = onProgressUpdate;
-  }
 }
 
 // 同步任务处理器
 class SyncTaskHandler extends TaskHandler {
-  // 进度更新回调
-  static Function(int progress)? onProgressUpdate;
-
   // 处理前台任务事件
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
@@ -134,12 +116,5 @@ class SyncTaskHandler extends TaskHandler {
   Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {
     // 任务结束时调用
     await WakelockPlus.disable();
-  }
-
-  // 处理同步进度更新
-  void updateProgress(int progress) {
-    if (onProgressUpdate != null) {
-      onProgressUpdate!(progress);
-    }
   }
 }
