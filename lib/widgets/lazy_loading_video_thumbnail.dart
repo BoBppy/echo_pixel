@@ -73,10 +73,12 @@ class _LazyLoadingVideoThumbnailState extends State<LazyLoadingVideoThumbnail> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (_isLoading) {
       // 显示加载占位符
       return Container(
-        color: Colors.black,
+        color: isDark ? Colors.blue[300] : Colors.blue[100],
         child: const Center(
           child: SizedBox(
             width: 24,
@@ -90,7 +92,7 @@ class _LazyLoadingVideoThumbnailState extends State<LazyLoadingVideoThumbnail> {
     if (_hasError || _thumbnailPath == null) {
       // 显示错误占位符
       return Container(
-        color: Colors.black,
+        color: isDark ? Colors.red[300] : Colors.red[100],
         child: const Center(
           child: Icon(Icons.videocam_off, color: Colors.white60, size: 32),
         ),
@@ -104,7 +106,7 @@ class _LazyLoadingVideoThumbnailState extends State<LazyLoadingVideoThumbnail> {
       filterQuality: FilterQuality.high,
       errorBuilder: (context, error, stackTrace) {
         return Container(
-          color: Colors.black,
+          color: isDark ? Colors.blue[300] : Colors.blue[100],
           child: const Center(
             child: Icon(Icons.broken_image, color: Colors.white60),
           ),

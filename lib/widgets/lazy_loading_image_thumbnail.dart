@@ -81,10 +81,12 @@ class _LazyLoadingImageThumbnailState extends State<LazyLoadingImageThumbnail> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (_isLoading) {
       // 显示加载占位符
       return Container(
-        color: Colors.black,
+        color: isDark ? Colors.blue[300] : Colors.blue[100],
         child: const Center(
           child: SizedBox(
             width: 24,
@@ -98,7 +100,7 @@ class _LazyLoadingImageThumbnailState extends State<LazyLoadingImageThumbnail> {
     if (_hasError || _thumbnailData == null) {
       // 显示错误占位符
       return Container(
-        color: Colors.black,
+        color: isDark ? Colors.red[300] : Colors.red[100],
         child: const Center(
           child: Icon(Icons.broken_image, color: Colors.white60, size: 32),
         ),
@@ -123,12 +125,14 @@ class _LazyLoadingImageThumbnailState extends State<LazyLoadingImageThumbnail> {
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.6),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.6)
+                    : Colors.black.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: const Text(
                 'GIF',
-                style: TextStyle(color: Colors.white, fontSize: 10),
+                style: TextStyle(fontSize: 10),
               ),
             ),
           ),
@@ -143,7 +147,7 @@ class _LazyLoadingImageThumbnailState extends State<LazyLoadingImageThumbnail> {
       filterQuality: FilterQuality.high,
       errorBuilder: (context, error, stackTrace) {
         return Container(
-          color: Colors.black,
+          color: Colors.blue[100],
           child: const Center(
             child: Icon(Icons.broken_image, color: Colors.white60),
           ),

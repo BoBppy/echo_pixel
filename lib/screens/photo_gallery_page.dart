@@ -1,4 +1,5 @@
 import 'package:echo_pixel/screens/image_viewer_page.dart';
+import 'package:echo_pixel/screens/video_player_page.dart';
 import 'package:echo_pixel/services/media_index_service.dart';
 import 'package:echo_pixel/services/media_scanner.dart';
 import 'package:echo_pixel/widgets/lazy_loading_image_thumbnail.dart';
@@ -61,7 +62,6 @@ class _PhotoGalleryPageState extends State<PhotoGalleryPage> {
         style: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: Color.fromARGB(255, 0, 0, 0),
         ),
       ),
     );
@@ -98,10 +98,8 @@ class _PhotoGalleryPageState extends State<PhotoGalleryPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ImageViewerPage(
+                      builder: (context) => VideoPlayerPage(
                         mediaFile: asset,
-                        mediaFiles: assets,
-                        initialIndex: index,
                       ),
                     ),
                   );

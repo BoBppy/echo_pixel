@@ -72,32 +72,37 @@ class WaitingStep implements SyncStep {
   @override
   Widget content(MediaSyncService service, MediaIndexService indexService,
       WebDavService webDavService) {
-    return Column(
-      children: [
-        const Text('等待开始同步'),
-        const SizedBox(height: 10),
-        FilledButton(
-            onPressed: webDavService.isConnected
-                ? () {
-                    if (!isDesktopPlatform()) {
-                      ForegroundSyncService.startForegroundTask(
-                        desc: title,
-                      );
-                    }
-                    final nextStep = service.currentStep + 1;
-                    SyncStep.allSteps[nextStep]
-                        .task(nextStep + 1, service, indexService);
-                    service.currentStep += 1;
-                  }
-                : null,
-            child: const Text('开始同步')),
-      ],
-    );
+    return Padding(
+        padding: EdgeInsetsGeometry.all(5),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('点击开始同步'),
+            const SizedBox(height: 10),
+            FilledButton(
+                onPressed: webDavService.isConnected
+                    ? () {
+                        if (!isDesktopPlatform()) {
+                          ForegroundSyncService.startForegroundTask(
+                            desc: title,
+                          );
+                        }
+                        final nextStep = service.currentStep + 1;
+                        SyncStep.allSteps[nextStep]
+                            .task(nextStep + 1, service, indexService);
+                        service.currentStep += 1;
+                      }
+                    : null,
+                child: const Icon(Icons.play_arrow_outlined)),
+          ],
+        ));
   }
 
   @override
   Future<void> task(int nextStepIndex, MediaSyncService syncService,
-      MediaIndexService indexService) async {}
+      MediaIndexService indexService) async {
+    syncService.errorMessage = '';
+  }
 }
 
 class InitWebDavDirectoryStep implements SyncStep {
@@ -151,7 +156,12 @@ class UpdateCloudObjectsStep implements SyncStep {
     ForegroundSyncService.updateNotification(
       desc: title,
     );
-    await syncService.updateCloudObjects();
+    try {
+      await syncService.updateCloudObjects();
+    } catch (e) {
+      syncService.errorMessage = '更新云端资源列表失败: $e';
+      return;
+    }
     SyncStep.allSteps[nextStepIndex]
         .task(nextStepIndex + 1, syncService, indexService);
     syncService.currentStep += 1;
@@ -195,8 +205,15 @@ class SyncFromCloudStep implements SyncStep {
     ForegroundSyncService.updateNotification(
       desc: title,
     );
-    final allObjects = indexService.mediaFiles;
-    await syncService.syncFromCloud(allObjects);
+
+    try {
+      final allObjects = indexService.mediaFiles;
+      await syncService.syncFromCloud(allObjects);
+    } catch (e) {
+      syncService.errorMessage = '从云端同步资源失败: $e';
+      return;
+    }
+
     SyncStep.allSteps[nextStepIndex]
         .task(nextStepIndex + 1, syncService, indexService);
     syncService.currentStep += 1;
@@ -241,7 +258,12 @@ class SyncToCloudStep implements SyncStep {
       desc: title,
     );
     final localObjects = indexService.localMediaFiles;
-    await syncService.syncToCloud(localObjects);
+    try {
+      await syncService.syncToCloud(localObjects);
+    } catch (e) {
+      syncService.errorMessage = '上传资源到云端失败: $e';
+      return;
+    }
     SyncStep.allSteps[nextStepIndex]
         .task(nextStepIndex + 1, syncService, indexService);
     syncService.currentStep += 1;
@@ -277,6 +299,7 @@ class SyncCompletedStep implements SyncStep {
   @override
   Future<void> task(int nextStepIndex, MediaSyncService syncService,
       MediaIndexService indexService) async {
+    syncService.errorMessage = '';
     await ForegroundSyncService.stopForegroundTask();
   }
 }
@@ -284,6 +307,13 @@ class SyncCompletedStep implements SyncStep {
 class MediaSyncService extends ChangeNotifier {
   final WebDavService _webdavService;
   late Directory _appMediaDir;
+
+  String _errorMessage = '';
+  String get errorMessage => _errorMessage;
+  set errorMessage(String message) {
+    _errorMessage = message;
+    notifyListeners();
+  }
 
   // webdav上的图片，视频资源名
   Map<String, String> _cloudObjects = {};
