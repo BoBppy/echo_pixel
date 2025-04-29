@@ -163,16 +163,13 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        // 移除"Echo Pixel"标题，改为根据当前页面显示不同的标题
-        title: Text(_selectedIndex == 0
-            ? '照片库'
-            : _selectedIndex == 1
-                ? 'WebDAV'
-                : _selectedIndex == 2
-                    ? '设备管理'
-                    : '设置'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
+          title: Text(_selectedIndex == 0
+              ? '照片库'
+              : _selectedIndex == 1
+                  ? 'WebDAV'
+                  : _selectedIndex == 2
+                      ? '设备管理'
+                      : '设置')),
       drawer: isDesktopPlatform() || isTabletOrLarger
           ? null
           : NavigationDrawer(
