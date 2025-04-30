@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import '../services/thumbnail_service.dart';
 
 /// 懒加载图片缩略图组件 - 使用ThumbnailService生成缩略图
@@ -81,6 +82,22 @@ class _LazyLoadingImageThumbnailState extends State<LazyLoadingImageThumbnail> {
 
   @override
   Widget build(BuildContext context) {
+    return Skeletonizer(
+      enabled: _isLoading,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          color: Colors.transparent,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: inner(),
+        ),
+      ),
+    );
+  }
+
+  Widget inner() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (_isLoading) {

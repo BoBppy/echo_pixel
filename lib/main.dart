@@ -1,3 +1,4 @@
+import 'package:echo_pixel/screens/about_page.dart';
 import 'package:echo_pixel/screens/media_scan_settings_page.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:echo_pixel/screens/permission_guide_page.dart';
@@ -137,7 +138,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return switch (index) {
       0 => PhotoGalleryPage(),
       1 => const WebDavStatusPage(),
-      _ => const SettingsPage(),
+      2 => const SettingsPage(),
+      _ => const AboutPage()
     };
   }
 
@@ -167,9 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ? '照片库'
               : _selectedIndex == 1
                   ? 'WebDAV'
-                  : _selectedIndex == 2
-                      ? '设备管理'
-                      : '设置')),
+                  : '设置')),
       drawer: isDesktopPlatform() || isTabletOrLarger
           ? null
           : NavigationDrawer(
@@ -197,27 +197,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   label: const Text('WebDAV'),
                   selectedIcon: const Icon(Icons.cloud),
                 ),
-                const Divider(),
                 NavigationDrawerDestination(
                   icon: const Icon(Icons.settings_outlined),
                   label: const Text('设置'),
                   selectedIcon: const Icon(Icons.settings),
                 ),
                 const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.cloud_sync),
-                  title: const Text('WebDAV同步'),
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-                const AboutListTile(
-                  icon: Icon(Icons.info),
-                  applicationName: 'Echo Pixel',
-                  applicationVersion: '1.0.0',
-                  applicationLegalese: '© 2025 Echo Pixel',
-                  child: Text('关于应用'),
-                ),
+                NavigationDrawerDestination(
+                    icon: const Icon(Icons.info_outlined),
+                    label: const Text('关于'),
+                    selectedIcon: const Icon(Icons.info)),
               ],
             ),
       body: Row(
@@ -240,6 +229,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icon(Icons.settings),
                   label: Text('设置'),
                 ),
+                NavigationRailDestination(
+                    icon: Icon(Icons.info_outlined), label: Text('关于')),
               ],
               selectedIndex: _selectedIndex,
               onDestinationSelected: _onItemTapped,
