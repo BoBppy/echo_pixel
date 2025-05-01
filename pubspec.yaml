@@ -70,6 +70,7 @@ dependencies:
   easy_stepper: ^0.8.5+1
   skeletonizer: ^2.0.0-pre
   shared_preferences: ^2.2.2
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:

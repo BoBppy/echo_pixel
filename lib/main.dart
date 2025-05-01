@@ -7,6 +7,7 @@ import 'package:echo_pixel/services/thumbnail_service.dart';
 import 'package:echo_pixel/services/foreground_sync_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:google_fonts/google_fonts.dart';
 import 'dart:io' show Platform;
 import 'package:media_kit/media_kit.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -91,20 +92,21 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final themeService = Provider.of<ThemeService>(context);
+    final textTheme = Theme.of(context).textTheme;
 
     return MaterialApp(
       title: 'Echo Pixel',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+          useMaterial3: true,
+          textTheme: GoogleFonts.notoSansScTextTheme(textTheme)),
       darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.blue,
+            brightness: Brightness.dark,
+          ),
+          useMaterial3: true,
+          textTheme: GoogleFonts.notoSansScTextTheme(textTheme)),
       themeMode: themeService.themeMode,
       home: const AppStartupController(),
       debugShowCheckedModeBanner: false,
