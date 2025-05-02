@@ -5,6 +5,7 @@ import 'package:echo_pixel/services/media_scanner.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mime/mime.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path/path.dart' as p;
 
 class DesktopMediaScanner extends MediaScanner {
   Map<String, List<String>> _indices = {};
@@ -129,7 +130,15 @@ class DesktopMediaScanner extends MediaScanner {
             final type = mine.startsWith('image')
                 ? MediaAssetType.image
                 : MediaAssetType.video;
-            mediaFiles[hash] = MediaAsset(entity, type);
+                
+            // 提取相对路径并获取文件夹名称
+            final relativePath = p.relative(entity.path, from: dir);
+            final dirPath = p.dirname(relativePath);
+            
+            // 处理根目录情况
+            final sourceAlbumOrFolder = dirPath == '.' ? p.basename(dir) : dirPath;
+            
+            mediaFiles[hash] = MediaAsset(entity, type, sourceAlbumOrFolder: sourceAlbumOrFolder);
           }
         }
       }
