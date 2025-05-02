@@ -1,4 +1,3 @@
-import 'package:echo_pixel/screens/about_page.dart';
 import 'package:echo_pixel/screens/media_scan_settings_page.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:echo_pixel/screens/permission_guide_page.dart';
@@ -140,8 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return switch (index) {
       0 => PhotoGalleryPage(),
       1 => const WebDavStatusPage(),
-      2 => const SettingsPage(),
-      _ => const AboutPage()
+      _ => const SettingsPage(),
     };
   }
 
@@ -203,12 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: const Icon(Icons.settings_outlined),
                   label: const Text('设置'),
                   selectedIcon: const Icon(Icons.settings),
-                ),
-                const Divider(),
-                NavigationDrawerDestination(
-                    icon: const Icon(Icons.info_outlined),
-                    label: const Text('关于'),
-                    selectedIcon: const Icon(Icons.info)),
+                )
               ],
             ),
       body: Row(
