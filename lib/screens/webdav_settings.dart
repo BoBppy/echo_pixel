@@ -1,3 +1,4 @@
+import 'package:async/async.dart';
 import 'package:echo_pixel/screens/webdav_status_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -25,6 +26,8 @@ class _WebDavSettingsScreenState extends State<WebDavSettingsScreen> {
   final _uploadRootPathController = TextEditingController(text: '/EchoPixel');
   final _maxConcurrentTasksController = TextEditingController(text: '5');
   late final WebDavService _webDavService;
+
+  CancelableOperation? _testConnectionOperation;
 
   bool _isConnecting = false;
   bool _isConnected = false;
@@ -91,7 +94,16 @@ class _WebDavSettingsScreenState extends State<WebDavSettingsScreen> {
     );
   }
 
-  Future<void> _testConnection() async {
+  void _testConnection() {
+    if (_testConnectionOperation != null) {
+      _testConnectionOperation!.cancel();
+    }
+
+    _testConnectionOperation =
+        CancelableOperation.fromFuture(_testConnectionInner());
+  }
+
+  Future<void> _testConnectionInner() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -230,6 +242,9 @@ class _WebDavSettingsScreenState extends State<WebDavSettingsScreen> {
                   }
                   return null;
                 },
+                onChanged: (value) {
+                  _testConnection();
+                },
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -242,6 +257,9 @@ class _WebDavSettingsScreenState extends State<WebDavSettingsScreen> {
                 ),
                 // 用户名现在是可选的
                 validator: (value) => null,
+                onChanged: (value) {
+                  _testConnection();
+                },
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -255,6 +273,9 @@ class _WebDavSettingsScreenState extends State<WebDavSettingsScreen> {
                 obscureText: true,
                 // 密码现在是可选的
                 validator: (value) => null,
+                onChanged: (value) {
+                  _testConnection();
+                },
               ),
               const SizedBox(height: 16),
               TextFormField(

@@ -71,6 +71,7 @@ dependencies:
   skeletonizer: ^2.0.0-pre
   shared_preferences: ^2.2.2
   google_fonts: ^6.2.1
+  async: ^2.13.0
 
 dev_dependencies:
   flutter_test:
