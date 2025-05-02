@@ -16,33 +16,31 @@ class PhotoGalleryPage extends StatefulWidget {
   State<StatefulWidget> createState() => _PhotoGalleryPageState();
 }
 
-class _PhotoGalleryPageState extends State<PhotoGalleryPage> with SingleTickerProviderStateMixin {
+class _PhotoGalleryPageState extends State<PhotoGalleryPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('相册'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: '时间线'),
-            Tab(text: '相册'),
-          ],
-        ),
+      appBar: TabBar(
+        controller: _tabController,
+        tabs: const [
+          Tab(text: '时间线'),
+          Tab(text: '相册'),
+        ],
       ),
       body: TabBarView(
         controller: _tabController,
@@ -53,7 +51,7 @@ class _PhotoGalleryPageState extends State<PhotoGalleryPage> with SingleTickerPr
       ),
     );
   }
-  
+
   Widget _buildTimelineView() {
     final mediaIndexService = context.watch<MediaIndexService>();
     final indices = mediaIndexService.indices;
@@ -68,27 +66,26 @@ class _PhotoGalleryPageState extends State<PhotoGalleryPage> with SingleTickerPr
       final assets = entry.value.map((hash) => mediaFiles[hash]!).toList();
       return _buildPhotoItem(entry.key, assets);
     }).toList();
-    
+
     return ListView.builder(
         itemCount: items.length,
         itemBuilder: (_, index) {
           return items[index];
-      }
-    );
+        });
   }
-  
+
   Widget _buildAlbumsView() {
     final mediaIndexService = context.watch<MediaIndexService>();
     final albums = mediaIndexService.localAlbums;
-    
+
     if (albums.isEmpty) {
       return const Center(
         child: Text('没有找到相册'),
       );
     }
-    
+
     final albumEntries = albums.entries.toList();
-    
+
     return GridView.builder(
       padding: const EdgeInsets.all(8.0),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -102,16 +99,16 @@ class _PhotoGalleryPageState extends State<PhotoGalleryPage> with SingleTickerPr
         final album = albumEntries[index];
         final albumName = album.key;
         final assets = album.value;
-        
+
         return _buildAlbumItem(albumName, assets);
       },
     );
   }
-  
+
   Widget _buildAlbumItem(String albumName, List<MediaAsset> assets) {
     // 使用第一张图片作为封面
     final coverAsset = assets.isNotEmpty ? assets.first : null;
-    
+
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -134,19 +131,19 @@ class _PhotoGalleryPageState extends State<PhotoGalleryPage> with SingleTickerPr
           children: [
             Expanded(
               child: coverAsset != null
-                ? coverAsset.type == MediaAssetType.image
-                  ? LazyLoadingImageThumbnail(
-                      imagePath: coverAsset.file.path,
-                      fit: BoxFit.cover,
-                    )
-                  : LazyLoadingVideoThumbnail(
-                      videoPath: coverAsset.file.path,
-                      fit: BoxFit.cover,
-                    )
-                : Container(
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.folder, size: 50),
-                  ),
+                  ? coverAsset.type == MediaAssetType.image
+                      ? LazyLoadingImageThumbnail(
+                          imagePath: coverAsset.file.path,
+                          fit: BoxFit.cover,
+                        )
+                      : LazyLoadingVideoThumbnail(
+                          videoPath: coverAsset.file.path,
+                          fit: BoxFit.cover,
+                        )
+                  : Container(
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.folder, size: 50),
+                    ),
             ),
             Padding(
               padding: const EdgeInsets.all(8.0),
@@ -224,8 +221,9 @@ class _PhotoGalleryPageState extends State<PhotoGalleryPage> with SingleTickerPr
       waterfall,
     ]);
   }
-  
-  Widget _buildMediaItem(BuildContext context, MediaAsset asset, List<MediaAsset> allAssets, int index) {
+
+  Widget _buildMediaItem(BuildContext context, MediaAsset asset,
+      List<MediaAsset> allAssets, int index) {
     return switch (asset.type) {
       MediaAssetType.image => InkWell(
           onTap: () {

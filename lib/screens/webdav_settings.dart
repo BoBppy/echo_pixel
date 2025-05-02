@@ -196,7 +196,6 @@ class _WebDavSettingsScreenState extends State<WebDavSettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('WebDAV设置'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           // 添加查看传输状态按钮
           IconButton(
