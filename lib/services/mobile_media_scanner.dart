@@ -5,6 +5,7 @@ import 'package:echo_pixel/services/media_scanner.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mime/mime.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:path/path.dart' as p;
 
 class MobileMediaScanner extends MediaScanner {
   bool _isScanning = false;
@@ -142,8 +143,12 @@ class MobileMediaScanner extends MediaScanner {
           final type = mine.startsWith('image')
               ? MediaAssetType.image
               : MediaAssetType.video;
+              
+          // 提取文件夹名称
+          final sourceAlbumOrFolder = p.basename(p.dirname(file.path));
+          
           indices[dateString]!.add(hash);
-          mediaFiles[hash] = MediaAsset(file, type);
+          mediaFiles[hash] = MediaAsset(file, type, sourceAlbumOrFolder: sourceAlbumOrFolder);
           scannedAssets += 1;
           _scanProgress = scannedAssets / assetsCount;
         }

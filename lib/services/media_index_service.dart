@@ -91,4 +91,22 @@ class MediaIndexService extends ChangeNotifier {
 
   /// 云端资源
   Map<String, MediaAsset> get cloudMediaFiles => _cloudScanner.mediaFiles;
+
+  /// 按相册/文件夹分组的本地资源
+  Map<String, List<MediaAsset>> get localAlbums {
+    final Map<String, List<MediaAsset>> albums = {};
+    
+    for (final asset in localMediaFiles.values) {
+      if (asset.sourceAlbumOrFolder == null) continue;
+      
+      final albumName = asset.sourceAlbumOrFolder!;
+      if (!albums.containsKey(albumName)) {
+        albums[albumName] = [];
+      }
+      
+      albums[albumName]!.add(asset);
+    }
+    
+    return albums;
+  }
 }

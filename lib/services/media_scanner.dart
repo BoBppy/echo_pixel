@@ -22,13 +22,17 @@ class MediaAsset {
   /// 类型
   final MediaAssetType type;
 
-  MediaAsset(this.file, this.type);
+  /// 来源相册或文件夹
+  final String? sourceAlbumOrFolder;
+
+  MediaAsset(this.file, this.type, {this.sourceAlbumOrFolder});
 
   /// 转JSON
   Map<String, dynamic> toJson() {
     return {
       'path': file.path,
       'type': type.index,
+      'source_album_or_folder': sourceAlbumOrFolder,
     };
   }
 
@@ -36,7 +40,8 @@ class MediaAsset {
   static MediaAsset fromJson(Map<String, dynamic> json) {
     final path = json['path'] as String;
     final type = MediaAssetType.values[json['type'] as int];
-    return MediaAsset(File(path), type);
+    final sourceAlbumOrFolder = json['source_album_or_folder'] as String?;
+    return MediaAsset(File(path), type, sourceAlbumOrFolder: sourceAlbumOrFolder);
   }
 }
 
