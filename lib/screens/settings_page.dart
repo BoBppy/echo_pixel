@@ -109,144 +109,129 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 使用Provider获取服务实例
     final themeService = Provider.of<ThemeService>(context);
+    Color primaryColor = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          // 应用设置标题
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
-            child: Text(
-              '应用设置',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+      body: ListView(children: [
+        // 应用设置标题
+        Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            '应用设置',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: primaryColor,
             ),
           ),
+        ),
 
-          // 主题设置
-          Card.filled(
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            child: SwitchListTile(
-              title: const Text('深色模式'),
-              subtitle: const Text('启用深色主题'),
-              value: themeService.isDarkMode,
-              onChanged: (value) => themeService.setDarkMode(value),
-            ),
-          ),
+        SwitchListTile(
+          title: const Text('跟随系统主题'),
+          subtitle: const Text('是否启用深色模式跟随系统开关'),
+          value: themeService.isSystemMode,
+          onChanged: (value) => themeService.setSystemMode(value),
+        ),
 
-          // 云同步标题
-          const Padding(
-            padding: EdgeInsets.only(top: 24.0, bottom: 8.0),
-            child: Text(
-              '云同步',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+        SwitchListTile(
+          title: const Text('深色模式'),
+          subtitle: const Text('启用深色主题'),
+          value: themeService.isDarkMode,
+          onChanged: themeService.isSystemMode
+              ? null
+              : (value) => themeService.setDarkMode(value),
+        ),
 
-          // WebDAV设置卡片
-          Card.filled(
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ListTile(
-                  leading: Icon(
-                    _isWebDavConnected ? Icons.cloud_done : Icons.cloud_off,
-                    color: _isWebDavConnected
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.5),
-                  ),
-                  title: const Text('WebDAV 设置'),
-                  subtitle: Text(_webDavStatus),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: _openWebDavSettings,
-                ),
-              ],
+        // 云同步标题
+        Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            '云同步',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: primaryColor,
             ),
           ),
+        ),
 
-          // 自动同步设置
-          Card.filled(
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            child: SwitchListTile(
-              title: const Text('自动同步'),
-              subtitle: const Text('当连接到Wi-Fi时自动同步媒体文件'),
-              value: _enableAutoSync,
-              onChanged: _isWebDavConnected ? _saveAutoSync : null,
-            ),
+        ListTile(
+          leading: Icon(
+            _isWebDavConnected ? Icons.cloud_done : Icons.cloud_off,
+            color: _isWebDavConnected
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.5),
           ),
+          title: const Text('WebDAV 设置'),
+          subtitle: Text(_webDavStatus),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: _openWebDavSettings,
+        ),
 
-          // 其他设置标题
-          const Padding(
-            padding: EdgeInsets.only(top: 24.0, bottom: 8.0),
-            child: Text(
-              '媒体管理',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+        // 自动同步设置
+        SwitchListTile(
+          title: const Text('自动同步'),
+          subtitle: const Text('当连接到Wi-Fi时自动同步媒体文件'),
+          value: _enableAutoSync,
+          onChanged: _isWebDavConnected ? _saveAutoSync : null,
+        ),
 
-          // 存储空间管理
-          Card.filled(
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            child: ListTile(
-              leading: const Icon(Icons.storage),
-              title: const Text('存储空间管理'),
-              subtitle: const Text('管理缓存和本地媒体存储'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: _openStorageManagement,
+        // 其他设置标题
+        Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            '媒体管理',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: primaryColor,
             ),
           ),
+        ),
 
-          // 媒体扫描设置
-          Card.filled(
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            child: ListTile(
-              leading: const Icon(Icons.folder),
-              title: const Text('媒体扫描设置'),
-              subtitle: const Text('选择要扫描的文件夹'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: _openMediaScanSettings,
-            ),
-          ),
+        // 存储空间管理
+        ListTile(
+          leading: const Icon(Icons.storage),
+          title: const Text('存储空间管理'),
+          subtitle: const Text('管理缓存和本地媒体存储'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: _openStorageManagement,
+        ),
 
-          // 关于应用
-          const Padding(
-            padding: EdgeInsets.only(top: 24.0, bottom: 8.0),
-            child: Text(
-              '关于',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+        // 媒体扫描设置
+        ListTile(
+          leading: const Icon(Icons.folder),
+          title: const Text('媒体扫描设置'),
+          subtitle: const Text('选择要扫描的文件夹'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: _openMediaScanSettings,
+        ),
 
-          Card.filled(
-            margin: const EdgeInsets.symmetric(vertical: 8.0),
-            child: ListTile(
-              leading: const Icon(Icons.info_outline),
-              title: const Text('关于 Echo Pixel'),
-              subtitle: const Text('版本 1.0.0'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: _openAboutPage,
+        // 关于应用
+        Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            '关于',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: primaryColor,
             ),
           ),
-        ],
-      ),
+        ),
+
+        ListTile(
+          leading: const Icon(Icons.info_outline),
+          title: const Text('关于 Echo Pixel'),
+          subtitle: const Text('版本 1.0.0'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: _openAboutPage,
+        ),
+      ]),
     );
   }
 }
