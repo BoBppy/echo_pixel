@@ -11,8 +11,8 @@ class AboutPage extends StatefulWidget {
 }
 
 class _AboutPageState extends State<AboutPage> {
-  String _appVersion = '1.0.0';
-  String _appBuildNumber = '1';
+  String _appVersion = 'unknown';
+  String _appBuildNumber = 'unknown';
 
   @override
   void initState() {
@@ -79,7 +79,7 @@ class _AboutPageState extends State<AboutPage> {
 
               // 应用版本
               Text(
-                '版本 $_appVersion ($_appBuildNumber)',
+                '版本 $_appVersion+$_appBuildNumber',
                 style: TextStyle(
                   color: Theme.of(context)
                       .colorScheme
@@ -142,7 +142,7 @@ class _AboutPageState extends State<AboutPage> {
           leading: const Icon(Icons.person),
           title: const Text('shadow3'),
           subtitle: const Text('shadow3aaaa@gmail.com'),
-          onTap: () => _launchUrl('shadow3aaaa@gmail.com'),
+          onTap: () => _launchUrl('mailto:shadow3aaaa@gmail.com'),
         ),
 
         const Divider(),
