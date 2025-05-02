@@ -224,8 +224,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icon(Icons.settings),
                   label: Text('设置'),
                 ),
-                NavigationRailDestination(
-                    icon: Icon(Icons.info_outlined), label: Text('关于')),
               ],
               selectedIndex: _selectedIndex,
               onDestinationSelected: _onItemTapped,

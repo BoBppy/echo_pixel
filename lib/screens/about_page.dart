@@ -46,131 +46,142 @@ class _AboutPageState extends State<AboutPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(children: [
-      // 应用图标和版本信息
-      Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          children: [
-            // 应用图标
-            SvgPicture.asset(
-              "assets/icon/EchoPixel.svg",
-              width: 100,
-              height: 100,
-            ),
-            const SizedBox(height: 16),
-
-            // 应用名称
-            const Text(
-              'Echo Pixel',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('关于'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: ListView(children: [
+        // 应用图标和版本信息
+        Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            children: [
+              // 应用图标
+              SvgPicture.asset(
+                "assets/icon/EchoPixel.svg",
+                width: 100,
+                height: 100,
               ),
-            ),
+              const SizedBox(height: 16),
 
-            // 应用版本
-            Text(
-              '版本 $_appVersion ($_appBuildNumber)',
-              style: TextStyle(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onSurface
-                    .withValues(alpha: 0.7),
+              // 应用名称
+              const Text(
+                'Echo Pixel',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
+
+              // 应用版本
+              Text(
+                '版本 $_appVersion ($_appBuildNumber)',
+                style: TextStyle(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurface
+                      .withValues(alpha: 0.7),
+                ),
+              ),
+
+              // 应用描述
+              const SizedBox(height: 16),
+              const Text(
+                '一款跨平台的照片管理应用，支持本地照片浏览和WebDAV云同步',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16),
+              ),
+            ],
+          ),
+        ),
+
+        const Divider(),
+
+        // 功能列表
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Text(
+            '主要功能',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
+          ),
+        ),
 
-            // 应用描述
-            const SizedBox(height: 16),
-            const Text(
-              '一款跨平台的照片管理应用，支持本地照片浏览和WebDAV云同步',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
+        ListTile(
+          leading: const Icon(Icons.photo_library),
+          title: const Text('照片库'),
+          subtitle: const Text('浏览和管理您的照片和视频'),
+        ),
+        ListTile(
+          leading: const Icon(Icons.cloud_sync),
+          title: const Text('WebDAV同步'),
+          subtitle: const Text('将媒体文件同步到任何WebDAV服务器'),
+        ),
+
+        const Divider(),
+
+        // 开发者信息
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Text(
+            '开发者',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
-          ],
-        ),
-      ),
-
-      const Divider(),
-
-      // 功能列表
-      const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        child: Text(
-          '主要功能',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
           ),
         ),
-      ),
 
-      ListTile(
-        leading: const Icon(Icons.photo_library),
-        title: const Text('照片库'),
-        subtitle: const Text('浏览和管理您的照片和视频'),
-      ),
-      ListTile(
-        leading: const Icon(Icons.cloud_sync),
-        title: const Text('WebDAV同步'),
-        subtitle: const Text('将媒体文件同步到任何WebDAV服务器'),
-      ),
+        ListTile(
+          leading: const Icon(Icons.person),
+          title: const Text('shadow3'),
+          subtitle: const Text('shadow3aaaa@gmail.com'),
+          onTap: () => _launchUrl('shadow3aaaa@gmail.com'),
+        ),
 
-      const Divider(),
+        const Divider(),
 
-      // 开发者信息
-      const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        child: Text(
-          '开发者',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+        // 法律信息
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Text(
+            '法律信息',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
-      ),
 
-      ListTile(
-        leading: const Icon(Icons.person),
-        title: const Text('shadow3'),
-        subtitle: const Text('shadow3aaaa@gmail.com'),
-        onTap: () => _launchUrl('shadow3aaaa@gmail.com'),
-      ),
+        ListTile(
+          leading: const Icon(Icons.code),
+          title: const Text('开源许可'),
+          onTap: () => _showLicensesPage(),
+        ),
 
-      const Divider(),
-
-      // 法律信息
-      const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        child: Text(
-          '法律信息',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+        // 版权信息
+        Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Text(
+            '© 2025 Echo Pixel. All rights reserved.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.7),
+              fontSize: 12,
+            ),
           ),
         ),
-      ),
-
-      ListTile(
-        leading: const Icon(Icons.code),
-        title: const Text('开源许可'),
-        onTap: () => _showLicensesPage(),
-      ),
-
-      // 版权信息
-      Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Text(
-          '© 2025 Echo Pixel. All rights reserved.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color:
-                Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-            fontSize: 12,
-          ),
-        ),
-      ),
-    ]);
+      ]),
+    );
   }
 
   void _showLicensesPage() {
