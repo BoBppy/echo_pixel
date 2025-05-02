@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:echo_pixel/services/media_sync_service.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
@@ -14,7 +15,7 @@ class _StorageManagementPageState extends State<StorageManagementPage> {
   bool _isLoading = true;
   int _totalStorageUsed = 0;
   int _thumbnailCacheSize = 0;
-  int _mediaCacheSize = 0;
+  int _cloudMediaSize = 0;
 
   @override
   void initState() {
@@ -36,13 +37,12 @@ class _StorageManagementPageState extends State<StorageManagementPage> {
           Directory('${cacheDir.path}${Platform.pathSeparator}thumbnails');
       _thumbnailCacheSize = await _calculateDirectorySize(thumbnailDir);
 
-      // 计算媒体缓存大小（假设存储在缓存目录下的media_cache文件夹中）
-      final mediaCacheDir =
-          Directory('${cacheDir.path}${Platform.pathSeparator}media_cache');
-      _mediaCacheSize = await _calculateDirectorySize(mediaCacheDir);
+      // 计算媒体大小
+      final cloudMediaDir = await cloudMediaDirectory;
+      _cloudMediaSize = await _calculateDirectorySize(cloudMediaDir);
 
       // 计算总存储使用量
-      _totalStorageUsed = _thumbnailCacheSize + _mediaCacheSize;
+      _totalStorageUsed = _thumbnailCacheSize + _cloudMediaSize;
 
       if (mounted) {
         setState(() {
@@ -238,7 +238,7 @@ class _StorageManagementPageState extends State<StorageManagementPage> {
                         StorageItem(
                           icon: Icons.video_library,
                           title: '媒体缓存',
-                          size: _mediaCacheSize,
+                          size: _cloudMediaSize,
                           formatSize: _formatSize,
                         ),
                       ],
@@ -273,8 +273,8 @@ class _StorageManagementPageState extends State<StorageManagementPage> {
                         ListTile(
                           title: const Text('清除媒体缓存'),
                           leading: const Icon(Icons.video_library),
-                          trailing: Text(_formatSize(_mediaCacheSize)),
-                          onTap: _mediaCacheSize > 0
+                          trailing: Text(_formatSize(_cloudMediaSize)),
+                          onTap: _cloudMediaSize > 0
                               ? () => _clearCache('media')
                               : null,
                         ),
