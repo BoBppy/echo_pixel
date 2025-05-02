@@ -12,9 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          lfs: true
+        uses: nschloe/action-cached-lfs-checkout@v1
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -46,9 +44,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          lfs: true
+        uses: nschloe/action-cached-lfs-checkout@v1
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -87,9 +83,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          lfs: true
+        uses: nschloe/action-cached-lfs-checkout@v1
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
